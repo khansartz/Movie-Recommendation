@@ -112,7 +112,9 @@ Dalam membangun sistem rekomendasi berbasis konten (*Content-Based Filtering*), 
 
 ### 1. Content-Based Filtering dengan TF-IDF dan Cosine Similarity
 
-#### Langkah-Langkah Model
+Content-Based Filtering adalah pendekatan sistem rekomendasi yang menyarankan item (misalnya film) berdasarkan kemiripan kontennya dengan item yang disukai pengguna sebelumnya. Dalam konteks proyek ini, metadata seperti genre film digunakan untuk membangun representasi fitur setiap film.
+
+#### Langkah-Langkah Modeling:
 
 - **Preprocessing Genre**
 
@@ -189,7 +191,10 @@ Di sini user memilih film Grudge 3 dengan genre "Horror" dan sistem akan merekom
 - Kurang mampu menangkap konteks atau selera kompleks seperti preferensi berdasarkan aktor, sutradara, atau rating.
 
 ### 2. Collaborative Filtering dengan Matrix Factorization (Neural Network Embedding)
-#### Langkah-Langkah Model
+
+Collaborative Filtering adalah pendekatan yang merekomendasikan item berdasarkan interaksi (rating) antara user dan item. Di sini, sistem belajar dari pola penilaian pengguna lain untuk membuat rekomendasi, tanpa melihat isi konten filmnya.
+
+#### Langkah-Langkah Modeling:
 - **Encoding User dan Movie**
 
 Untuk dapat memanfaatkan embedding layer pada neural network, ID pengguna dan ID film perlu diubah ke dalam bentuk integer (numerik). Proses encoding ini dilakukan dengan membuat mapping dari ID asli ke indeks numerik.
