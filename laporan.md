@@ -29,23 +29,26 @@ Menggunakan genre sebagai fitur utama, dilakukan ekstraksi dan vektorisasi mengg
 Menggunakan Neural Collaborative Filtering dengan embedding user dan item (film), dilatih untuk memprediksi skor rating dan memberikan rekomendasi berdasarkan pola rating pengguna lain. Model ini efektif menangkap hubungan tersembunyi antara pengguna dan film.
 
 ## Data Understanding
-**Sumber Dataset**: [Movie Recommendation System - parasharmanas](https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system)  
-- Tidak ada data missing values
+Dataset yang digunakan pada projek ini diambil dari Kaggle yang dapat dilihat pada link berikut: [Movie Recommendation System - parasharmanas](https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system)  
 - Dataset yang digunakan terdiri dari dua file utama, yaitu:
     - ratings.csv: Data rating pengguna terhadap film.
     - movies.csv: Informasi mengenai film.
 
 - Struktur Dataset
     - movies.csv
+    	- Terdapat 62.423 baris dengan total 3 kolom.
+       	- Tidak terdapat data duplikat dan missing values
   
 | Dataset    | Kolom     | Tipe Data | Non-Null Count | Deskripsi                           |   
 | ---------- | --------- | --------- | -------------- | ----------------------------------- | 
 | **movies** | `movieId` | int64     | 62,423         | ID unik untuk tiap film             |  
 |            | `title`   | object    | 62,423         | Judul film                          |   
 |            | `genres`  | object    | 62,423         | Genre film                          | 
-
 <br>
-    - ratings.csv
+
+- ratings.csv
+ 	- Terdapat 25.000.095 baris dengan total 4 kolom.
+  	- Tidak terdapat data duplikat dan missing values
     
 | Dataset     | Kolom       | Tipe Data | Non-Null Count | Deskripsi                                                |
 | ----------- | ----------- | --------- | -------------- | -------------------------------------------------------- |
@@ -53,6 +56,15 @@ Menggunakan Neural Collaborative Filtering dengan embedding user dan item (film)
 |             | `movieId`   | int64     | 25,000,095     | ID film (relasi ke `movies`)                             |
 |             | `rating`    | float64   | 25,000,095     | Rating yang diberikan pengguna terhadap film (0.5 - 5.0) |
 |             | `timestamp` | int64     | 25,000,095     | Waktu rating diberikan (format epoch timestamp)          |
+
+- Visualisasi Data
+	- **Visualisasi Top 10 Genre pada Dataset movies.csv** 
+<br> Visualisasi ini menampilkan 10 genre film yang paling sering muncul dalam dataset. Data genre awalnya dipisahkan dari kolom genres, yang memiliki format gabungan dengan tanda pemisah "|", lalu dipecah menjadi baris-baris terpisah agar setiap genre dapat dihitung secara individual.
+![image](https://github.com/user-attachments/assets/6e45ac93-3aa4-46e2-8bac-c5a189ff4c21)
+
+	- **Distribusi Skor Rating Film pada Dataset ratings.csv**
+<br> Berdasarkan visualisasi distribusi skor rating, diketahui bahwa tiga skor rating yang paling sering diberikan oleh pengguna adalah 4.0, 3.0, dan 5.0. Hal ini menunjukkan bahwa mayoritas pengguna cenderung memberikan penilaian yang positif hingga sangat positif terhadap film yang mereka tonton.
+![image](https://github.com/user-attachments/assets/ebde3d09-ce85-41c0-bb0d-3f7b0a9b5c3b)
 
 
 ## Data Preparation
@@ -106,6 +118,68 @@ movie_new = pd.DataFrame({
     'genre': movie_genre
 })
 ```
+## Data Preparation untuk Content Based Filtering
+### Preprocessing Genre
+
+Genre yang memiliki label tidak jelas seperti `(no genres listed)` diganti menjadi `'Unknown'`, dan format diseragamkan (contoh: `'Sci-Fi'` diubah menjadi `'SciFi'`).
+```
+# Mengganti "no genres listed" menjadi "Unknown"
+movie_new['genre'] = movie_new['genre'].replace('(no genres listed)', 'Unknown')
+movie_new[movie_new['genre'].str.contains(r'Unknown', case=False, regex=True)]
+```
+
+### TF-IDF Vectorizer
+ 
+TF-IDF (*Term Frequency–Inverse Document Frequency*) merupakan metode representasi teks ke dalam bentuk numerik yang mempertimbangkan seberapa sering suatu kata muncul dalam satu dokumen (*term frequency*) dan seberapa jarang kata tersebut muncul di seluruh dokumen (*inverse document frequency*).  
+Pada sistem rekomendasi ini, TF-IDF digunakan untuk mengubah data genre film dari bentuk teks menjadi bentuk vektor numerik. Setiap genre diberikan bobot berdasarkan tingkat kepentingannya dalam membedakan satu film dengan film lainnya.
+
+  ```
+  # Fit dan transform genre menjadi matriks TF-IDF
+  tfidf_matrix = tf.fit_transform(data['genre'])
+  ```
+
+## Data Preparation untuk Collaborative Filtering
+### Encoding
+Langkah ini dilakukan untuk mengubah userId dan movieId menjadi bentuk numerik yang lebih mudah diproses oleh model machine learning.
+- userId dan movieId diubah jadi list unik.
+- Dibuat dictionary mapping untuk encode (id → angka) dan decode (angka → id).
+- Kolom baru user dan movie ditambahkan ke DataFrame berisi hasil encode.
+```
+# Encode userId dan movieId ke angka
+user_ids = df['userId'].unique().tolist()
+user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
+movie_ids = df['movieId'].unique().tolist()
+movie_to_movie_encoded = {x: i for i, x in enumerate(movie_ids)}
+
+# Tambah kolom encoded ke DataFrame
+df['user'] = df['userId'].map(user_to_user_encoded)
+df['movie'] = df['movieId'].map(movie_to_movie_encoded)
+```
+### Pemeriksaan dan Informasi Dataset Setelah Encoding
+Pada tahap ini dilakukan pemeriksaan terhadap hasil encoding kolom userId dan movieId ke dalam bentuk numerik. Proses ini dimulai dengan menampilkan beberapa baris awal dari data untuk memastikan bahwa mapping telah berhasil dilakukan dengan benar. Selanjutnya, dihitung jumlah user dan movie unik setelah proses encoding untuk mengetahui cakupan data yang tersedia.
+```
+# Jumlah user unik (yang udah di-encode)
+num_users = len(user_to_user_encoded)
+print("Jumlah user:", num_users)
+
+# Jumlah movie unik (yang udah di-encode)
+num_movies = len(movie_encoded_to_movie)
+print("Jumlah movie:", num_movies)
+```
+### Split Data Train & Validation
+Bagian ini menjelaskan proses persiapan data sebelum training model, yaitu dengan mengacak dataset agar distribusi data merata, membuat fitur input dari kombinasi user dan movie, menormalisasi rating ke rentang 0–1 agar model lebih stabil, serta membagi data menjadi 80% untuk training dan 20% untuk validasi. Terakhir, dilakukan pengecekan bentuk data untuk memastikan pembagian sudah sesuai.
+```
+# Split 80% buat training, 20% buat validasi
+train_indices = int(0.8 * df.shape[0])
+x_train, x_val, y_train, y_val = (
+    x[:train_indices],
+    x[train_indices:],
+    y[:train_indices],
+    y[train_indices:]
+)
+```
+	
+
 ## Modeling
 
 Dalam membangun sistem rekomendasi berbasis konten (*Content-Based Filtering*), terdapat beberapa metode utama yang digunakan untuk mengukur kemiripan antar item (dalam hal ini: film).
@@ -116,19 +190,6 @@ Content-Based Filtering adalah pendekatan sistem rekomendasi yang menyarankan it
 
 #### Langkah-Langkah Modeling:
 
-- **Preprocessing Genre**
-
-Genre yang memiliki label tidak jelas seperti `(no genres listed)` diganti menjadi `'Unknown'`, dan format diseragamkan (contoh: `'Sci-Fi'` diubah menjadi `'SciFi'`).
-
-- **TF-IDF Vectorizer**  
- 
-TF-IDF (*Term Frequency–Inverse Document Frequency*) merupakan metode representasi teks ke dalam bentuk numerik yang mempertimbangkan seberapa sering suatu kata muncul dalam satu dokumen (*term frequency*) dan seberapa jarang kata tersebut muncul di seluruh dokumen (*inverse document frequency*).  
-Pada sistem rekomendasi ini, TF-IDF digunakan untuk mengubah data genre film dari bentuk teks menjadi bentuk vektor numerik. Setiap genre diberikan bobot berdasarkan tingkat kepentingannya dalam membedakan satu film dengan film lainnya.
-
-  ```
-  # Fit dan transform genre menjadi matriks TF-IDF
-  tfidf_matrix = tf.fit_transform(data['genre'])
-  ```
  - **Cosine Similarity**
 
 Cosine similarity adalah metode pengukuran kemiripan antar dua vektor dalam ruang berdimensi banyak dengan cara menghitung nilai cosinus dari sudut antar vektor tersebut.
@@ -141,6 +202,9 @@ Dalam konteks ini, vektor yang dibandingkan merupakan representasi TF-IDF dari g
     cosine_sim = cosine_similarity(tfidf_matrix)
     cosine_sim
 ```
+Alasan :
+
+Metode ini dipilih karena mampu mengukur kemiripan antara dua vektor fitur (genre film) secara efektif, terutama pada data berdimensi tinggi dan bersifat sparse seperti TF-IDF. Cosine similarity menghitung sudut antar vektor sehingga lebih fokus pada arah kemiripan daripada magnitudo, sehingga hasilnya akurat dalam menentukan film dengan genre yang mirip.
 
 - **Fungsi Rekomendasi**
 
@@ -174,11 +238,15 @@ def movie_recommendations(movie_name, similarity_data=cosine_sim_df, items=movie
     # Merge dengan data film asli agar dapat informasi genre
     return pd.DataFrame(closest, columns=['movie_name']).merge(items, on='movie_name').head(k)
 ```
+Alasan:
+
+Fungsi ini dirancang untuk mengembalikan film-film dengan nilai kemiripan tertinggi terhadap film yang menjadi input, dengan cara yang efisien dan tidak mengurutkan seluruh data. Selain itu, fungsi ini menghilangkan film input agar rekomendasi tidak menyertakan film yang sama dan menggabungkan data genre agar hasil rekomendasi memiliki informasi yang lengkap.
 
 - **Top N Recommendation Output**
 
-Di sini user memilih film Grudge 3 dengan genre "Horror" dan sistem akan merekomendasikan top 5 dari film dengan genre yang sama. Contoh output tersebut dapat dilihat di Gambar berikut: <br>
-![image](https://github.com/user-attachments/assets/5f8a8900-563c-4416-a8cb-1e279fbda647)
+Di sini user memilih film Butter (2011) dengan genre "Comedy" dan sistem akan merekomendasikan top 5 dari film dengan genre yang sama. Contoh output tersebut dapat dilihat di Gambar berikut: <br>
+![image](https://github.com/user-attachments/assets/0c65b083-c336-4083-abd4-a5967f95d497)
+
 
 ####  Kelebihan dan Kekurangan Content-Based Filtering
 **Kelebihan:**
@@ -195,47 +263,6 @@ Di sini user memilih film Grudge 3 dengan genre "Horror" dan sistem akan merekom
 Collaborative Filtering adalah pendekatan yang merekomendasikan item berdasarkan interaksi (rating) antara user dan item. Di sini, sistem belajar dari pola penilaian pengguna lain untuk membuat rekomendasi, tanpa melihat isi konten filmnya.
 
 #### Langkah-Langkah Modeling:
-- **Encoding User dan Movie**
-
-Untuk dapat memanfaatkan embedding layer pada neural network, ID pengguna dan ID film perlu diubah ke dalam bentuk integer (numerik). Proses encoding ini dilakukan dengan membuat mapping dari ID asli ke indeks numerik.
-
-```
-# Mapping userId dan movieId ke index numerik
-user_ids = ratings['userId'].unique().tolist()
-movie_ids = ratings['movieId'].unique().tolist()
-
-user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
-movie_to_movie_encoded = {x: i for i, x in enumerate(movie_ids)}
-
-ratings['user'] = ratings['userId'].map(user_to_user_encoded)
-ratings['movie'] = ratings['movieId'].map(movie_to_movie_encoded)
-```
-Alasan:
-
-Encoding diperlukan karena embedding layer hanya dapat memproses input dalam bentuk integer. Teknik ini memungkinkan model mempelajari representasi vektor dari pengguna dan film, sehingga bisa menangkap pola-pola kompleks dalam preferensi pengguna terhadap film yang tidak langsung terlihat dari fitur eksplisit seperti genre.
-	
-- **Normalisasi Rating**
-
-Rating film dinormalisasi ke rentang 0 hingga 1 agar sesuai dengan output dari fungsi aktivasi sigmoid yang digunakan pada model.
-```
-min_rating = ratings['rating'].min()
-max_rating = ratings['rating'].max()
-
-ratings['rating'] = ratings['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating))
-```
-Alasan:
-Karena fungsi aktivasi sigmoid digunakan pada output layer model, maka normalisasi rating sangat penting agar nilai target berada dalam rentang [0, 1]. Ini membantu proses pelatihan model menjadi lebih stabil dan akurat.
-
-- **Pemisahan Data**
-
-Data diacak dan kemudian dipisahkan menjadi data pelatihan dan validasi dengan rasio 80:20.
-```
-x = ratings[['user', 'movie']].values
-y = ratings['rating'].values
-
-train_indices = int(0.8 * ratings.shape[0])
-x_train, x_val, y_train, y_val = x[:train_indices], x[train_indices:], y[:train_indices], y[train_indices:]
-```
 - **Arsitektur Model Neural Network**
 
 Model rekomendasi dibuat dengan arsitektur berbasis tf.keras.Model subclassing. Model ini memiliki dua embedding layer, masing-masing untuk pengguna dan film. Dot product dari kedua embedding tersebut akan menghasilkan estimasi rating.
@@ -305,7 +332,8 @@ Grafik RMSE membantu mengidentifikasi kapan model mulai overfitting, stagnan, at
 
     - Top-N Recommendation Output
       Setelah seluruh prediksi dibuat, sistem akan memilih 10 film dengan rating tertinggi sebagai rekomendasi personal untuk user tersebut. Output tersebut dapat dilihat pada Gambar di bawah: <br>
-![image](https://github.com/user-attachments/assets/0c493fbf-4582-45ac-b082-ac7199efc42d)
+![image](https://github.com/user-attachments/assets/8a50149e-58e7-4b19-b51a-7f8b0056c193)
+
 
 #### Kelebihan dan Kekurangan Collaborative Filtering
 **Kelebihan:**
@@ -325,12 +353,12 @@ Rumus perhitungannya adalah sebagai berikut: <br>
 
 Sebuah item dianggap relevan apabila memiliki karakteristik yang sesuai dengan preferensi pengguna atau item acuan, dalam konteks ini yaitu genre film.
 #### Hasil Evaluasi
-Model content-based filtering memberikan rekomendasi berdasarkan kesamaan fitur antar film, khususnya genre. Misalnya, ketika pengguna memilih film Grudge 3, The (2009) yang bergenre Horror, sistem memberikan lima rekomendasi film lain yang juga bergenre Horror:
-- KM 31: Kilometro 31 (2006)
-- Circus of Horrors (1960)
-- Requiem for a Vampire (1971)
-- Halloween 5: The Revenge of Michael Myers (1989)
-- Black Sabbath (1963)
+Model content-based filtering memberikan rekomendasi berdasarkan kesamaan fitur antar film, khususnya genre. Misalnya, ketika pengguna memilih film Butter (2011) yang bergenre Comedy, sistem memberikan lima rekomendasi film lain yang juga bergenre Comedy:
+- Meatballs III (1987)
+- Serial (1980)
+- Specials, The (2000)
+- How to Stuff a Wild Bikini (1965)	
+- Blackadder Back & Forth (1999)
 
 Kelima film memiliki genre yang relevan dengan film yang dipilih, sehingga:
 Precision@5= 1.0 atau 100%
