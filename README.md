@@ -11,7 +11,7 @@ Proyek ini terdiri dari dua pendekatan utama:
 - **Collaborative Filtering**: Merekomendasikan film berdasarkan interaksi historis pengguna terhadap film (rating).
 
 ## 📁 Struktur Direktori
-.
+
 ├── data/
 │   └── movie_dataset.csv               # Dataset film dan rating pengguna
 ├── notebooks/
@@ -23,7 +23,6 @@ Proyek ini terdiri dari dua pendekatan utama:
 
 ## 🧰 Teknologi dan Library
 
-- Python 3.x
 - TensorFlow / Keras
 - Pandas, NumPy
 - Scikit-learn
@@ -38,6 +37,7 @@ Proyek ini terdiri dari dua pendekatan utama:
 
 2. Install dependencies:
     ``` pip install -r requirements.txt
+   ```
 
 ## ✅ Cara Menjalankan
 
