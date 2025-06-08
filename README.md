@@ -11,16 +11,12 @@ Proyek ini terdiri dari dua pendekatan utama:
 - **Collaborative Filtering**: Merekomendasikan film berdasarkan interaksi historis pengguna terhadap film (rating).
 
 ## 📁 Struktur Direktori
-
-├── data/
-│   └── movie_dataset.csv               # Dataset film dan rating pengguna
-├── notebooks/
-│   ├── content_based.ipynb             # Implementasi Content-Based Filtering
-│   └── collaborative_filtering.ipynb   # Implementasi Collaborative Filtering
-├── images/
-│   └── visualizations.png              # Visualisasi hasil pelatihan
-├── README.md                           # Deskripsi Projek
-
+ ```
+├───laporan.md
+├───sistem_rekomendasi.ipynb
+├───sistem_rekomendasi.py
+└───README.md
+ ```
 ## 🧰 Teknologi dan Library
 
 - TensorFlow / Keras
@@ -28,21 +24,10 @@ Proyek ini terdiri dari dua pendekatan utama:
 - Scikit-learn
 - Matplotlib / Seaborn
 
-## 🔧 Instalasi
-
-1. Clone repositori ini:
-   ```bash
-   git clone https://github.com/khansartz/movie_recommendation.git
-   cd movie-recommender
-
-2. Install dependencies:
-    ``` pip install -r requirements.txt
-   ```
 
 ## ✅ Cara Menjalankan
 
 ### 1. Content-Based Filtering
-- Jalankan notebook `content_based.ipynb`.
 - Sistem akan melakukan:
   - Pembersihan data genre.
   - Transformasi genre menjadi matriks TF-IDF.
@@ -50,7 +35,6 @@ Proyek ini terdiri dari dua pendekatan utama:
   - Rekomendasi film berdasarkan judul film input.
 
 ### 2. Collaborative Filtering
-- Jalankan notebook `collaborative_filtering.ipynb`.
 - Sistem akan melakukan:
   - Encoding ID pengguna dan film.
   - Normalisasi rating.
